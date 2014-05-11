@@ -22,7 +22,7 @@ app.get('/rpc.js', function (req, res) {
 });
 
 // Create rpc server instance
-var srpc = new RPC.Server(io);
+var srpc = new RPC.Server(io.sockets);
 
 // Expose serverResolvedMethod.
 srpc.methods.serverResolvedMethod =  function(rpc, a, b){

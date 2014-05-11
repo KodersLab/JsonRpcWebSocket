@@ -204,10 +204,10 @@ export module RPC {
     }
 
     export class Server extends Base {
-        constructor(io, namespace) {
+        constructor(sockets, namespace) {
             super(namespace);
             var that = this;
-            io.sockets.on('connection', function (socket) {
+            sockets.on('connection', function (socket) {
                 socket.on(that.channel('server2client'), function (data) {
                     that.server2client(socket, data);
                 });

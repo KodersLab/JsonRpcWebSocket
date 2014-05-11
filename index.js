@@ -226,10 +226,10 @@ if (typeof window != "undefined")
 
     var Server = (function (_super) {
         __extends(Server, _super);
-        function Server(io, namespace) {
+        function Server(sockets, namespace) {
             _super.call(this, namespace);
             var that = this;
-            io.sockets.on('connection', function (socket) {
+            sockets.on('connection', function (socket) {
                 socket.on(that.channel('server2client'), function (data) {
                     that.server2client(socket, data);
                 });

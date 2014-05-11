@@ -7,7 +7,7 @@
 <script src="/bluebird.js"></script>
 <script src="/rpc.js"></script>
 <script>
-var r,s;
+var r,s,srpc;
 function init(){
 	s = io.connect('http://localhost:80');
 	srpc = new RPC.Client(s);
