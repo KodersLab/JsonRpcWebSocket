@@ -108,12 +108,7 @@ if (typeof window != "undefined")
             // TODO: is possible to handle this?
             if (id === null)
                 return;
-
-            // Requested method is exposed?
-            if (!this.exposed.hasOwnProperty(method)) {
-                reject("No method " + method + " exposed on server.");
-            }
-            var that = this;
+            var channel = this.channel(direction);
             var handled = false;
 
             // Create reject function
@@ -121,7 +116,7 @@ if (typeof window != "undefined")
                 if (handled)
                     return;
                 handled = true;
-                return socket.emit(that.channel(direction), {
+                return socket.emit(channel, {
                     id: id,
                     result: null,
                     error: errors
@@ -133,15 +128,20 @@ if (typeof window != "undefined")
                 if (handled)
                     return;
                 handled = true;
-                return socket.emit(that.channel(direction), {
+                return socket.emit(channel, {
                     id: id,
                     result: value,
                     error: null
                 });
             }
 
+            // Requested method is exposed?
+            if (!this.exposed.hasOwnProperty(method) || typeof this.exposed[method] === "undefined") {
+                reject("No method " + method + " exposed on server.");
+            }
+
             // Prepend the rpc object with resolve, reject, rpc, socket to the object.
-            var args = [{ resolve: resolve, reject: reject, socket: socket, rpc: that }].concat(params);
+            var args = [{ resolve: resolve, reject: reject, socket: socket, rpc: this }].concat(params);
 
             try  {
                 // Resolve method should be called by the exposed method.
@@ -258,4 +258,3 @@ if (typeof window != "undefined")
     RPC.Server = Server;
 })(exports.RPC || (exports.RPC = {}));
 var RPC = exports.RPC;
-//# sourceMappingURL=rpc.js.map

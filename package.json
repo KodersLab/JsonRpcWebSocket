@@ -1,0 +1,32 @@
+{
+  "name": "jsonrpcwebsocket",
+  "version": "0.0.2",
+  "description": "This package enable a sort of JSON-RPC protocol via websockets.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"compile": "tsc --module CommonJS rpc.ts && move rpc.js index.js"
+  },
+  "dependencies": {
+	  "bluebird": ">= 1.2.0"
+  },
+  "devDependencies": {
+	  "typescript": ">= 1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KodersLab/JsonRpcWebSocket.git"
+  },
+  "keywords": [
+    "websocket",
+    "rpc",
+    "json-rpc",
+    "socket.io"
+  ],
+  "author": "Mattia Manzati @KodersLab",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KodersLab/JsonRpcWebSocket/issues"
+  },
+  "homepage": "https://github.com/KodersLab/JsonRpcWebSocket"
+}
