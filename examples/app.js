@@ -1,5 +1,6 @@
 // require library
-var RPC = require('jsonrpcwebsocket').RPC;
+// use instead var RPC = require('jsonrpcwebsocket').RPC;
+var RPC = require(__dirname+'/../index.js').RPC;
 // Import express, socket.io and other dependencies
 var app = require('express')();
 var server = require('http').Server(app);
@@ -24,13 +25,32 @@ app.get('/rpc.js', function (req, res) {
 var srpc = new RPC.Server(io);
 
 // Expose serverResolvedMethod.
-srpc.expose('serverResolvedMethod', function(rpc, a, b){
+srpc.methods.serverResolvedMethod =  function(rpc, a, b){
 	rpc.resolve('A was '+a+', B was '+b);
-});	
+};	
 
 // Expose serverRejectedMethod.
-srpc.expose('serverRejectedMethod', function(rpc, a, b){
+srpc.methods.serverRejectedMethod = function(rpc, a, b){
 	rpc.reject('Rejected by server.');
+};
+
+// After a client is connected, call its methods.
+io.sockets.on('connection', function(socket){
+	srpc.invoke(socket, 'clientResolvedMethod',1,2).then(function(v){
+		console.log('Resolved: '+v);
+	},function(v){
+		console.log('Rejected: '+v);
+	});
+	srpc.invoke(socket, 'clientRejectedMethod',1,2).then(function(v){
+		console.log('Resolved: '+v);
+	},function(v){
+		console.log('Rejected: '+v);
+	});
+	srpc.invoke(socket, 'clientMissingMethod',1,2).then(function(v){
+		console.log('Resolved: '+v);
+	},function(v){
+		console.log('Rejected: '+v);
+	});
 });
 
 server.listen(80);

@@ -32,7 +32,7 @@ if (typeof window != "undefined")
             // namespace for socket.io event.
             this.namespace = 'rpc';
             // stores exposed methods available to be called.
-            this.exposed = {};
+            this.methods = {};
             // stores promises in a deferred fashion so they can be resolved and rejected externally
             this.deferred = {};
             // set namespace by constructor
@@ -45,7 +45,7 @@ if (typeof window != "undefined")
         **/
         Base.prototype.expose = function (name, fn) {
             // expose function
-            this.exposed[name] = fn;
+            this.methods[name] = fn;
         };
 
         /**
@@ -136,7 +136,7 @@ if (typeof window != "undefined")
             }
 
             // Requested method is exposed?
-            if (!this.exposed.hasOwnProperty(method) || typeof this.exposed[method] === "undefined") {
+            if (!this.methods.hasOwnProperty(method)) {
                 reject("No method " + method + " exposed on server.");
             }
 
@@ -145,7 +145,7 @@ if (typeof window != "undefined")
 
             try  {
                 // Resolve method should be called by the exposed method.
-                var v = this.exposed[method].apply(socket, args);
+                var v = this.methods[method].apply(socket, args);
             } catch (e) {
                 // An error has occurred, reject.
                 reject(e);

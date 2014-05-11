@@ -7,21 +7,31 @@
 <script src="/bluebird.js"></script>
 <script src="/rpc.js"></script>
 <script>
-var r;
+var r,s;
 function init(){
-	r = new RPC.Client('http://localhost:80');
+	s = io.connect('http://localhost:80');
+	srpc = new RPC.Client(s);
+	// Expose clientResolvedMethod.
+	srpc.methods.clientResolvedMethod =  function(rpc, a, b){
+		rpc.resolve('A was '+a+', B was '+b);
+	};	
+	// Expose clientRejectedMethod.
+	srpc.methods.clientRejectedMethod = function(rpc, a, b){
+		rpc.reject('Rejected by client.');
+	};
 }
 
 function callServerResolvedMethod(){
-	r.invoke('serverResolvedMethod',1,2).then(function(v){
+	srpc.invoke('serverResolvedMethod',1,2).then(function(v){
 		alert('Resolved: '+v);
 	},function(v){
 		alert('Rejected: '+v);
 	});
 }
 
+
 function callServerRejectedMethod(){
-	r.invoke('serverRejectedMethod',1,2).then(function(v){
+	srpc.invoke('serverRejectedMethod',1,2).then(function(v){
 		alert('Resolved: '+v);
 	},function(v){
 		alert('Rejected: '+v);
@@ -29,7 +39,7 @@ function callServerRejectedMethod(){
 }
 
 function callServerMissingMethod(){
-	r.invoke('serverMissingMethod',1,2).then(function(v){
+	srpc.invoke('serverMissingMethod',1,2).then(function(v){
 		alert('Resolved: '+v);
 	},function(v){
 		alert('Rejected: '+v);
@@ -40,8 +50,10 @@ function callServerMissingMethod(){
 </head>
 
 <body onLoad="init();">
+	<p><b>Server Methods:</b> 
 	<input type="button" onClick="callServerResolvedMethod()" value="call Resolved Method." />
 	<input type="button" onClick="callServerRejectedMethod()" value="call Rejected Method." />
-	<input type="button" onClick="callServerMissingMethod()" value="call Missing Method." />
+	<input type="button" onClick="callServerMissingMethod()" value="call Missing Method." /></p>
+	<i>Examples for calling clients methods are exposed in app.js file.</i>
 </body>
 </html>

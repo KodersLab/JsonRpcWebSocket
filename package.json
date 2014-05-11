@@ -1,6 +1,6 @@
 {
   "name": "jsonrpcwebsocket",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "This package enable a sort of JSON-RPC protocol via websockets.",
   "main": "index.js",
   "scripts": {

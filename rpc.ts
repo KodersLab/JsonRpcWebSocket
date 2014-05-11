@@ -30,7 +30,7 @@ export module RPC {
         // namespace for socket.io event.
         private namespace: string = 'rpc';
         // stores exposed methods available to be called.
-        private exposed: { [name: string]: Function } = {};
+        private methods: { [name: string]: Function } = {};
         // stores promises in a deferred fashion so they can be resolved and rejected externally
         private deferred: {
             [name: number]: {
@@ -52,7 +52,7 @@ export module RPC {
         **/
         expose(name: string, fn: Function) {
             // expose function
-            this.exposed[name] = fn;
+            this.methods[name] = fn;
         }
 
         /**
@@ -128,7 +128,7 @@ export module RPC {
                 });
             }
             // Requested method is exposed?
-            if (!this.exposed.hasOwnProperty(method) || typeof this.exposed[method] === "undefined") {
+            if (!this.methods.hasOwnProperty(method)) {
                 reject("No method " + method + " exposed on server.");
             }
             // Prepend the rpc object with resolve, reject, rpc, socket to the object.
@@ -136,7 +136,7 @@ export module RPC {
             // Try resolving, if fails
             try {
                 // Resolve method should be called by the exposed method.
-                var v = this.exposed[method].apply(socket, args);
+                var v = this.methods[method].apply(socket, args);
             } catch (e) {
                 // An error has occurred, reject.
                 reject(e);
