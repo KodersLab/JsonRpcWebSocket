@@ -1,4 +1,4 @@
-﻿///<reference path="node.d.ts" />
+///<reference path="node.d.ts" />
 declare class Promise {
     constructor(resolver: Function);
 }
@@ -28,17 +28,9 @@ export module RPC {
         // id counter to generate a uuid
         private id: number = 0;
         // namespace for socket.io event.
-        private namespace: string = 'rpc';
+        namespace: string = 'rpc';
         // stores exposed methods available to be called.
-        private methods: { [name: string]: Function } = {};
-        // stores promises in a deferred fashion so they can be resolved and rejected externally
-        private deferred: {
-            [name: number]: {
-                reject: Function;
-                resolve: Function;
-                promise: Function;
-            }
-        } = {};
+        methods: { [name: string]: Function } = {};
 
         constructor(namespace = 'rpc') {
             // set namespace by constructor
@@ -56,48 +48,13 @@ export module RPC {
         }
 
         /**
-        * A helper wich prepends rpc: and appends : followed by the given direction.
-        * @param direction {String} The direction, default client2server
-        **/
-        channel(direction: string = 'client2server') {
-            return 'rpc:' + this.namespace + ':' + direction;
-        }
-
-        /**
-        * This is the base logic for the rpc response handling,
-        * rpc response is when you receive an object with id, error, result.
-        * @param data {Object} The object with id, error, result.
-        **/
-        handleResponse(data) {
-            // Stores props in vars giving a default if not setted.
-            var id = data.id || null;
-            var result = data.result || null;
-            var errors = data.error || null;
-            // If no id is given, fail.
-            // TODO: maybe handle no id?
-            if (id == null) return;
-            // If no deferred object has been registered for this call, exit.
-            if (!this.deferred.hasOwnProperty(id)) return;
-            // If result prop is null and errors is not, reject promise.
-            if (result == null && errors != null) {
-                this.deferred[id].reject(errors);
-            }
-            // if error prop is null and result is not, resolve promise.
-            if (result != null && errors == null) {
-                this.deferred[id].resolve(result);
-            }
-            // Remove deferred from archive, no more use for it.
-            delete this.deferred[id];
-        }
-
-        /**
-        * This is the base logic for the rpc request handling,
+        * This is the base logic for the rpc request handling.
         * rpc request is when you receive an object with id, method, params.
         * @param socket {Socket} The socket to emit to.
-        * @param direction {String} The direction: client2server or server2client.
         * @param data {Object} The object with id, method, params.
+        * @param respond {Function} The respond function given by socket.io.
         **/
-        handleRequest(socket, direction, data) {
+        handleRequest(socket, data, respond) {
             // Stores props in vars giving a default if not setted.
             var id = data.id || null;
             var method = data.method || null;
@@ -105,13 +62,12 @@ export module RPC {
             // If no id is given, reject.
             // TODO: is possible to handle this?
             if (id === null) return;
-            var channel = this.channel(direction);
             var handled = false;
             // Create reject function
             function reject(errors) {
                 if (handled) return;
                 handled = true;
-                return socket.emit(channel, {
+                return respond({
                     id: id,
                     result: null,
                     error: errors
@@ -121,7 +77,7 @@ export module RPC {
             function resolve(value) {
                 if (handled) return;
                 handled = true;
-                return socket.emit(channel, {
+                return respond({
                     id: id,
                     result: value,
                     error: null
@@ -146,11 +102,10 @@ export module RPC {
         /**
         * Handle invoke, invoke is when you call a remote function.
         * @param socket {Socket} The socket to emit to.
-        * @param direction {String} The direction: client2server or server2client.
         * @param method {String} The exposed method.
         * @param args {Array} The array containing the args for the method.
         **/
-        handleInvoke(socket, direction, method, args) {
+        handleInvoke(socket, method, args) {
             // Increment id.
             this.id++;
             // Store id to avoid its changes during the execution.
@@ -162,13 +117,25 @@ export module RPC {
                 deferred.resolve = resolve;
                 deferred.reject = reject;
             });
-            // Store deferred by id.
-            this.deferred[id] = deferred;
             // Emit via socket the function call.
-            socket.emit(this.channel(direction), {
+            socket.emit(this.namespace, {
                 id: id,
                 method: method,
                 params: args
+            }, function(data){
+                // Handle invoke response.
+                // Stores props in vars giving a default if not setted.
+                var id = data.id || null;
+                var result = data.result || null;
+                var errors = data.error || null;
+                // If result prop is null and errors is not, reject promise.
+                if (result == null && errors != null) {
+                    deferred.reject(errors);
+                }
+                // if error prop is null and result is not, resolve promise.
+                if (result != null && errors == null) {
+                    deferred.resolve(result);
+                }
             });
             // Return the promise.
             return deferred.promise;
@@ -182,24 +149,13 @@ export module RPC {
             super(namespace);
             this.socket = typeof socket === "string" ? io.connect(socket) : socket;
             var that = this;
-            this.socket.on(this.channel('server2client'), function (data) {
-                that.server2client(data);
+            this.socket.on(this.namespace, function (data, responder) {
+                that.handleRequest(that.socket, data, responder);
             });
-            this.socket.on(this.channel('client2server'), function (data) {
-                that.client2server(data);
-            });
-        }
-
-        private client2server(data) {
-            return this.handleResponse(data);
-        }
-
-        private server2client(data) {
-            return this.handleRequest(this.socket, 'server2client', data);
         }
 
         invoke(method, ...args) {
-            return this.handleInvoke(this.socket, 'client2server', method, args);
+            return this.handleInvoke(this.socket, method, args);
         }
     }
 
@@ -208,25 +164,14 @@ export module RPC {
             super(namespace);
             var that = this;
             sockets.on('connection', function (socket) {
-                socket.on(that.channel('server2client'), function (data) {
-                    that.server2client(socket, data);
-                });
-                socket.on(that.channel('client2server'), function (data) {
-                    that.client2server(socket, data);
+                socket.on(that.namespace, function (data, responder) {
+                    that.handleRequest(socket, data, responder);
                 });
             });
         }
 
-        private server2client(socket, data) {
-            return this.handleResponse(data);
-        }
-
-        private client2server(socket, data) {
-            return this.handleRequest(socket, 'client2server', data);
-        }
-
         invoke(socket, method, ...args) {
-            return this.handleInvoke(socket, 'server2client', method, args);
+            return this.handleInvoke(socket, method, args);
         }
     }
 }
