@@ -55,9 +55,9 @@ if (typeof window != "undefined")
         **/
         Base.prototype.handleRequest = function (socket, data, respond) {
             // Stores props in vars giving a default if not setted.
-            var id = data.id || null;
-            var method = data.method || null;
-            var params = data.params || [];
+            var id = typeof data['id'] == 'undefined' ? null : data.id;
+            var method = typeof data['method'] == 'undefined' ? null : data.method;
+            var params = typeof data['params'] == 'undefined' ? null : data.params;
 
             // If no id is given, reject.
             // TODO: is possible to handle this?
@@ -135,9 +135,9 @@ if (typeof window != "undefined")
             }, function (data) {
                 // Handle invoke response.
                 // Stores props in vars giving a default if not setted.
-                var id = data.id || null;
-                var result = data.result || null;
-                var errors = data.error || null;
+                var id = typeof data['id'] == 'undefined' ? null : data.id;
+                var result = typeof data['result'] == 'undefined' ? null : data.result;
+                var errors = typeof data['error'] == 'undefined' ? null : data.error;
 
                 // If result prop is null and errors is not, reject promise.
                 if (result == null && errors != null) {
