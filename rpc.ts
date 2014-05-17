@@ -133,7 +133,7 @@ export module RPC {
                     deferred.reject(errors);
                 }
                 // if error prop is null and result is not, resolve promise.
-                if (result != null && errors == null) {
+                if (errors == null) {
                     deferred.resolve(result);
                 }
             });
